@@ -1,65 +1,101 @@
 package br.com.fiap.soat7.usecase.services.impl;
 
 import br.com.fiap.soat7.adapter.repositories.CarRepository;
-import br.com.fiap.soat7.adapter.repositories.SalesRepository;
 import br.com.fiap.soat7.data.domain.Car;
-import br.com.fiap.soat7.data.domain.Sales;
 import br.com.fiap.soat7.data.dto.car.CarCreateRequest;
 import br.com.fiap.soat7.data.dto.car.CarResponse;
-import br.com.fiap.soat7.data.dto.car.CarSellRequest;
+import br.com.fiap.soat7.data.dto.car.CarSyncRequest;
 import br.com.fiap.soat7.data.dto.car.CarUpdateRequest;
-import br.com.fiap.soat7.usecase.services.exceptions.CarNotFoundException;
+import br.com.fiap.soat7.infra.config.api.CarStoreViewClient;
 import br.com.fiap.soat7.usecase.services.CarService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 @Service
-@Log4j2
 @RequiredArgsConstructor
 public class CarServiceImpl implements CarService {
 
-    private final CarRepository carRepository;
-    private final SalesRepository salesRepository;
-
-    @Override
-    public CarResponse create(CarCreateRequest carCreateRequest) {
-        Car v = new Car(carCreateRequest.brand(), carCreateRequest.model(), carCreateRequest.year(), carCreateRequest.color(), carCreateRequest.price());
-        Car saved = carRepository.save(v);
-        return CarResponse.from(saved);
-    }
-
-    @Override
-    public CarResponse update(Long carId, CarUpdateRequest carUpdateRequest) {
-        Car v = carRepository.findById(carId)
-                .orElseThrow(() -> new CarNotFoundException(carId));
-
-        v.update(carUpdateRequest.brand(), carUpdateRequest.model(), carUpdateRequest.year(), carUpdateRequest.color(), carUpdateRequest.price());
-        return CarResponse.from(v);
-    }
-
+    private final CarRepository carRepo;
+    private final CarStoreViewClient viewClient;
 
     @Override
     @Transactional
-    public CarResponse sell(Long carId, CarSellRequest req) {
-        Car car = carRepository.findById(carId)
-                .orElseThrow(() -> new CarNotFoundException(carId));
+    public CarResponse create(CarCreateRequest req) {
+        Car car = new Car(
+                req.brand(),
+                req.model(),
+                req.year(),
+                req.color(),
+                req.price()
+        );
 
-        if (salesRepository.existsByCarId(car.getId())) {
-            throw new IllegalStateException("Veículo já vendido.");
-        }
+        Car saved = carRepo.save(car);
 
-        car.markAsSold();
-        Sales sale = salesRepository.save(new Sales(car, req.buyerCpf(), req.soldAt()));
+        // replica pro View (idempotência por updatedAt)
+        viewClient.upsertCar(new CarSyncRequest(
+                saved.getId(),
+                saved.getBrand(),
+                saved.getModel(),
+                saved.getYear(),
+                saved.getColor(),
+                saved.getPrice(),
+                Instant.now()
+        ));
 
-        return CarResponse.from(car, sale);
+        return toResponse(saved);
     }
 
     @Override
+    @Transactional
+    public CarResponse update(Long carId, CarUpdateRequest req) {
+        Car existing = carRepo.findById(carId)
+                .orElseThrow(() -> new IllegalArgumentException("Car não encontrado"));
+
+        // usa seu método de domínio
+        existing.update(
+                req.brand(),
+                req.model(),
+                req.year(),
+                req.color(),
+                req.price()
+        );
+
+        Car saved = carRepo.save(existing);
+
+        // replica pro View
+        viewClient.upsertCar(new CarSyncRequest(
+                saved.getId(),
+                saved.getBrand(),
+                saved.getModel(),
+                saved.getYear(),
+                saved.getColor(),
+                saved.getPrice(),
+                Instant.now()
+        ));
+
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CarResponse getById(Long carId) {
-        Car v = carRepository.findById(carId)
-                .orElseThrow(() -> new CarNotFoundException(carId));
-        return CarResponse.from(v);
+        Car car = carRepo.findById(carId)
+                .orElseThrow(() -> new IllegalArgumentException("Car não encontrado"));
+
+        return toResponse(car);
+    }
+
+    private CarResponse toResponse(Car car) {
+        return new CarResponse(
+                car.getId(),
+                car.getBrand(),
+                car.getModel(),
+                car.getYear(),
+                car.getColor(),
+                car.getPrice()
+        );
     }
 }

@@ -1,6 +1,7 @@
 package br.com.fiap.soat7.infra;
 
 import br.com.fiap.soat7.adapter.repositories.AppUserRepository;
+import br.com.fiap.soat7.data.RoleUser;
 import br.com.fiap.soat7.data.domain.AppUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -29,22 +30,20 @@ public class AdminUserInitializer implements CommandLineRunner {
     @Value("${br.com.fiap.admin.password}")
     private String password;
 
-    @Value("${br.com.fiap.admin.role}")
-    private String role;
-
     @Override
     public void run(String... args) {
         if (repo.existsByEmail(email.toLowerCase())) {
             log.info("Usuário admin já existe. Ignorando bootstrap.");
             return;
         }
+        cpf = cpf == null ? "" : cpf.replaceAll("\\D", "");
 
         AppUser admin = new AppUser(
                 name,
                 email.toLowerCase(),
                 cpf,
                 passwordEncoder.encode(password),
-                role
+                RoleUser.ROLE_ADMIN
         );
 
         repo.save(admin);

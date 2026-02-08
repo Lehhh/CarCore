@@ -1,5 +1,6 @@
 package br.com.fiap.soat7.data.domain;
 
+import br.com.fiap.soat7.data.RoleUser;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -30,13 +31,14 @@ public class AppUser {
     @Column(name = "password_hash", nullable = false, length = 120)
     private String passwordHash;
 
-    @Column(nullable = false)
-    private String role;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 30)
+    private RoleUser role;
 
     protected AppUser() {}
 
 
-    public AppUser(String name, String email, String cpf, String passwordHash, String role) {
+    public AppUser(String name, String email, String cpf, String passwordHash, RoleUser role) {
         this.name = name;
         this.email = email;
         this.cpf = cpf;
@@ -55,7 +57,28 @@ public class AppUser {
         this.passwordHash = passwordHash;
     }
 
-    public void changeRole(String role) {
+    public void changeRole(RoleUser role) {
         this.role = role;
+    }
+
+    /* segurança extra: garante normalização antes de persistir */
+    @PrePersist
+    @PreUpdate
+    private void normalizeCpf() {
+        this.cpf = normalize(this.cpf);
+    }
+
+    private String normalize(String cpf) {
+        if (cpf == null) {
+            throw new IllegalArgumentException("CPF não pode ser nulo");
+        }
+
+        String digits = cpf.replaceAll("\\D", "");
+
+        if (digits.length() != 11) {
+            throw new IllegalArgumentException("CPF deve conter 11 dígitos");
+        }
+
+        return digits;
     }
 }

@@ -1,5 +1,6 @@
 package br.com.fiap.soat7.data.dto.user;
 
+import br.com.fiap.soat7.data.RoleUser;
 import br.com.fiap.soat7.data.domain.AppUser;
 
 public record UserResponse(
@@ -7,7 +8,7 @@ public record UserResponse(
         String name,
         String email,
         String cpf,
-        String role
+        RoleUser role
 ) {
     public static UserResponse from(AppUser user) {
         return new UserResponse(

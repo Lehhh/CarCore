@@ -1,4 +1,4 @@
-package br.com.fiap.soat7.infra.config;
+package br.com.fiap.soat7.infra.config.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.*;
@@ -20,13 +20,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/1/auth/**").permitAll()
+                        .requestMatchers("/api/1/auth/**",
+                                "/actuator/health",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(basic -> {}); // simples e direto
+                .httpBasic(basic -> {}); // aqui é só pra autenticar o login se você quiser basic
 
         return http.build();
     }
+
 
     @Bean
     PasswordEncoder passwordEncoder() {

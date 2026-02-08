@@ -2,7 +2,6 @@ package br.com.fiap.soat7.adapter.controllers;
 
 import br.com.fiap.soat7.data.dto.car.CarCreateRequest;
 import br.com.fiap.soat7.data.dto.car.CarResponse;
-import br.com.fiap.soat7.data.dto.car.CarSellRequest;
 import br.com.fiap.soat7.data.dto.car.CarUpdateRequest;
 import br.com.fiap.soat7.usecase.services.CarService;
 import jakarta.validation.Valid;

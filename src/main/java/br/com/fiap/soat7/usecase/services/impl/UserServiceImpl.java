@@ -1,6 +1,7 @@
 package br.com.fiap.soat7.usecase.services.impl;
 
 import br.com.fiap.soat7.adapter.repositories.AppUserRepository;
+import br.com.fiap.soat7.data.RoleUser;
 import br.com.fiap.soat7.data.domain.AppUser;
 import br.com.fiap.soat7.data.dto.user.*;
 import br.com.fiap.soat7.usecase.services.UserService;
@@ -40,7 +41,7 @@ public class UserServiceImpl implements UserService {
                 email,
                 cpf,
                 hash,
-                "ROLE_USER"
+                RoleUser.ROLE_USER
         ));
 
         return UserResponse.from(saved);

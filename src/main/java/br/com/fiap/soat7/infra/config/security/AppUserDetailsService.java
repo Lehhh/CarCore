@@ -1,4 +1,4 @@
-package br.com.fiap.soat7.infra.config;
+package br.com.fiap.soat7.infra.config.security;
 
 import br.com.fiap.soat7.adapter.repositories.AppUserRepository;
 import org.springframework.security.core.userdetails.*;
@@ -20,7 +20,7 @@ public class AppUserDetailsService implements UserDetailsService {
 
         return User.withUsername(user.getEmail())
                 .password(user.getPasswordHash())
-                .roles(user.getRole().replace("ROLE_", "")) // ROLE_USER -> USER
+                .roles(user.getRole().name().replace("ROLE_", "")) // ROLE_USER -> USER
                 .build();
     }
 }

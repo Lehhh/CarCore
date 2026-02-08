@@ -1,37 +1,38 @@
-br.com.fiap:
-  admin:
-    name: Admin Sistema
-    email: ${ADMIN_EMAIL:admin@soat7.com.br}
-    cpf: "00000000000"
-    password: ${ADMIN_PASSWORD}
-    role: ROLE_ADMIN
+br.com.fiap.admin:
+  name: ${ADMIN_NAME:admin}
+  cpf: ${ADMIN_CPF:000.000.000-00}
+  email: ${ADMIN_EMAIL:admin@local}
+  password: ${ADMIN_PASSWORD:admin123}
+  role: ${ADMIN_ROLE:ROLE_ADMIN}
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:false}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:false}
+    path: /swagger-ui.html
+server:
+  port: ${SERVER_PORT:8080}
 
 spring:
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    default-schema: public
-    schemas: public
-
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:soat7}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      initialization-fail-timeout: 60000   # espera até 60s
-      connection-timeout: 30000
-      maximum-pool-size: 10
-
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        default_schema: public
-logging:
-  level:
-    org.flywaydb: DEBUG
-    org.springframework.boot.autoconfigure.flyway: DEBUG
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+
+carstore:
+  view:
+    base-url: ${VIEW_BASE_URL}
+
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:carstore-core}
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:/app/keys/private_key.pem}
+

@@ -2,12 +2,14 @@ package br.com.fiap.soat7.data.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "car")
 @Getter
+@Setter
 public class Car {
 
     @Id
@@ -29,9 +31,6 @@ public class Car {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal price;
 
-    @Column(nullable = false)
-    private boolean sold;
-
     protected Car() {}
 
     public Car(String brand, String model, Integer year, String color, BigDecimal price) {
@@ -40,13 +39,12 @@ public class Car {
         this.year = year;
         this.color = color;
         this.price = price;
-        this.sold = false;
     }
 
     public void update(String brand, String model, Integer year, String color, BigDecimal price) {
-        if (this.sold) {
-            throw new IllegalStateException("Veículo já vendido; não é permitido editar.");
-        }
+//        if (this.sold) {
+//            throw new IllegalStateException("Veículo já vendido; não é permitido editar.");
+//        }
         this.brand = brand;
         this.model = model;
         this.year = year;
@@ -54,10 +52,4 @@ public class Car {
         this.price = price;
     }
 
-    public void markAsSold() {
-        if (this.sold) {
-            throw new IllegalStateException("Veículo já vendido.");
-        }
-        this.sold = true;
-    }
 }
