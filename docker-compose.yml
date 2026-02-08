@@ -1,0 +1,48 @@
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${DB_CONTAINER_NAME:-soat7-postgres}
+    environment:
+      POSTGRES_DB: ${DB_NAME:-soat7}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT_PUBLISHED:-5432}:5432"
+    volumes:
+      - ${DB_VOLUME_NAME:-soat7_pgdata}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-soat7}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE_PATH:-Dockerfile}
+    container_name: ${APP_CONTAINER_NAME:-soat7-api}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT_PUBLISHED:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
+
+      # Datasource (bate com seu application.yml)
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-soat7}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+
+      # Admin bootstrap
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@soat7.com.br}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+
+      # Opcional: tuning JVM
+      JAVA_OPTS: ${JAVA_OPTS:-}
+
+volumes:
+  soat7_pgdata:
+    name: ${DB_VOLUME_NAME:-soat7_pgdata}
