@@ -1,34 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
+
 	<groupId>br.com.fiap.soat7</groupId>
 	<artifactId>CarStoreBack</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>CarStoreBack</name>
-	<description>Demo project for Spring Boot</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
 	<properties>
+		<!-- Boot 4 requer 17+; manter 17 garante compatibilidade -->
 		<java.version>17</java.version>
+
+		<!-- SonarCloud: caminhos dos relatórios -->
+		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<sonar.junit.reportPaths>target/surefire-reports</sonar.junit.reportPaths>
 	</properties>
+
 	<dependencies>
 		<!-- WEB -->
 		<dependency>
@@ -40,8 +37,7 @@
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 
-
-		<!-- JPA / HIBERNATE -->
+		<!-- JPA / VALIDATION -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -76,7 +72,6 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-
 		<!-- POSTGRES -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -91,22 +86,15 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- TEST (Mockito + JUnit Jupiter já vem no starter test se você usar; aqui você está usando direto) -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>
-			<version>5.11.0</version>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- Source: https://mvnrepository.com/artifact/org.mockito/mockito-core -->
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
 			<version>5.21.0</version>
 			<scope>test</scope>
 		</dependency>
 
-
+		<!-- SWAGGER -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -117,57 +105,57 @@
 	<build>
 		<plugins>
 
-					<!-- 1) Executa testes unitários (target/surefire-reports) -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<version>3.5.2</version>
+			<!-- Testes unitários -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.2</version>
+				<configuration>
+					<useModulePath>false</useModulePath>
+				</configuration>
+			</plugin>
+
+			<!-- Cobertura JaCoCo (gera XML pro Sonar em target/site/jacoco/jacoco.xml) -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
 						<configuration>
-							<useModulePath>false</useModulePath>
+							<formats>
+								<format>XML</format>
+								<format>HTML</format>
+							</formats>
 						</configuration>
-					</plugin>
+					</execution>
+				</executions>
+			</plugin>
 
-					<!-- 2) Gera cobertura JaCoCo e relatório XML (target/site/jacoco/jacoco.xml) -->
-					<plugin>
-						<groupId>org.jacoco</groupId>
-						<artifactId>jacoco-maven-plugin</artifactId>
-						<version>0.8.12</version>
-						<executions>
-							<!-- injeta o agent antes dos testes -->
-							<execution>
-								<id>prepare-agent</id>
-								<goals>
-									<goal>prepare-agent</goal>
-								</goals>
-							</execution>
-
-							<!-- gera relatórios no verify (inclui XML que o Sonar usa) -->
-							<execution>
-								<id>report</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>report</goal>
-								</goals>
-								<configuration>
-									<formats>
-										<format>XML</format>
-										<format>HTML</format>
-									</formats>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-
-
-
+			<!-- Flyway plugin (opcional) -->
 			<plugin>
 				<groupId>org.flywaydb</groupId>
 				<artifactId>flyway-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- Compiler -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -176,6 +164,8 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+
+			<!-- Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -188,6 +178,7 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
 
