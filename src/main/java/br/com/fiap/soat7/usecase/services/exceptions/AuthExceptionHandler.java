@@ -10,6 +10,13 @@ import java.util.Map;
 public class AuthExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handle(IllegalArgumentException ex) {
-        return ResponseEntity.status(401).body(Map.of("message", ex.getMessage()));
+
+        String message = (ex.getMessage() == null || ex.getMessage().isBlank())
+                ? "Unauthorized"
+                : ex.getMessage();
+
+        return ResponseEntity
+                .status(401)
+                .body(Map.of("message", message));
     }
 }
