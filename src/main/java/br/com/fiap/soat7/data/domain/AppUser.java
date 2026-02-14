@@ -4,6 +4,9 @@ import br.com.fiap.soat7.data.RoleUser;
 import jakarta.persistence.*;
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Entity
 @Table(
         name = "app_users",
@@ -81,4 +84,5 @@ public class AppUser {
 
         return digits;
     }
+
 }

@@ -1,5 +1,6 @@
 package br.com.fiap.soat7.infra.config.security;
 
+import br.com.fiap.soat7.data.RoleUser;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -8,7 +9,6 @@ import com.nimbusds.jwt.SignedJWT;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 
 public class JwtIssuer {
 
@@ -20,7 +20,7 @@ public class JwtIssuer {
         this.issuer = issuer;
     }
 
-    public String issue(String subject, String email, List<String> roles, long ttlSeconds) throws Exception {
+    public String issue(String subject, String email, RoleUser roleUser, long ttlSeconds) throws Exception {
         Instant now = Instant.now();
 
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
@@ -29,7 +29,7 @@ public class JwtIssuer {
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plusSeconds(ttlSeconds)))
                 .claim("email", email)
-                .claim("roles", roles)
+                .claim("role", roleUser.name()) 
                 .build();
 
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)

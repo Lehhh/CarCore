@@ -24,4 +24,12 @@ class RsaKeyLoaderTest {
                 () -> RsaKeyLoader.loadPrivateKeyPkcs8(Path.of("keys/public_key.pem")));
         assertNotNull(ex.getMessage());
     }
+
+    @Test
+    void loadPrivateKeyPkcs8() {
+    }
+
+    @Test
+    void loadPublicKeyX509() {
+    }
 }

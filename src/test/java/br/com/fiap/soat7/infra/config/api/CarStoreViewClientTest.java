@@ -1,77 +1,97 @@
 package br.com.fiap.soat7.infra.config.api;
 
 import br.com.fiap.soat7.data.dto.car.CarSyncRequest;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
+import br.com.fiap.soat7.infra.config.security.CurrentTokenProvider;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class CarStoreViewClientTest {
 
-    @Test
-    void upsertCarShouldInvokeWebClientChain() {
-        WebClient webClient = mock(WebClient.class);
-        WebClient.RequestBodyUriSpec postSpec = mock(WebClient.RequestBodyUriSpec.class);
-        WebClient.RequestBodySpec uriSpec = mock(WebClient.RequestBodySpec.class);
-        WebClient.RequestHeadersSpec<?> headersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+    @Mock
+    private CurrentTokenProvider tokenProvider;
+    @Mock
+    private WebClient.Builder builder;
+    @Mock
+    private WebClient webClient;
 
-        doReturn(postSpec).when(webClient).post();
-        doReturn(uriSpec).when(postSpec).uri("/sync/cars");
-        doReturn(headersSpec).when(uriSpec).bodyValue(any());
-        doReturn(responseSpec).when(headersSpec).retrieve();
-        doReturn(Mono.just(ResponseEntity.noContent().build()))
-                .when(responseSpec).toBodilessEntity();
+    @Mock
+    private WebClient.RequestBodyUriSpec uriSpec;
+    @Mock
+    private WebClient.RequestBodySpec bodySpec;
+    @Mock
+    private WebClient.RequestHeadersSpec<?> headersSpec;
+    @Mock
+    private WebClient.ResponseSpec responseSpec;
 
-        CarStoreViewClient client = new CarStoreViewClient(webClient);
+    private CarStoreViewClient client;
 
-        client.upsertCar(new CarSyncRequest(
-                1L, "A", "B", 2000, "C",
-                new BigDecimal("1.00"),
-                Instant.now()
-        ));
+    private MockedStatic<WebClient> webClientStatic; // <-- guardar para fechar
 
-        verify(webClient).post();
-        verify(postSpec).uri("/sync/cars");
-        verify(uriSpec).bodyValue(any(CarSyncRequest.class));
-        verify(headersSpec).retrieve();
-        verify(responseSpec).toBodilessEntity();
-        verifyNoMoreInteractions(webClient, postSpec, uriSpec, headersSpec, responseSpec);
+    @BeforeEach
+    void setup() {
+        client = new CarStoreViewClient(tokenProvider);
+        WebClient.RequestHeadersSpec headersSpec = mock(WebClient.RequestHeadersSpec.class);
+
+        // injeta baseUrl no @Value
+        ReflectionTestUtils.setField(client, "baseUrl", "http://carstore_view_app:8081");
+
+        // mock do builder estático
+        webClientStatic = mockStatic(WebClient.class);
+        webClientStatic.when(WebClient::builder).thenReturn(builder);
+
+        when(builder.baseUrl(anyString())).thenReturn(builder);
+        when(builder.build()).thenReturn(webClient);
+
+        // chain correta
+        when(webClient.post()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/sync/cars"))).thenReturn(bodySpec);
+
+        when(bodySpec.headers(any())).thenReturn(bodySpec);
+
+        // bodyValue retorna RequestHeadersSpec<?> (não RequestBodySpec)
+        when(bodySpec.bodyValue(any(CarSyncRequest.class))).thenReturn(headersSpec);
+
+        when(headersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
+    }
+
+    @AfterEach
+    void tearDown() {
+        webClientStatic.close(); // <-- evita "static mocking already registered"
     }
 
     @Test
-    void upsertCarShouldNotThrowOnErrorPublisher() {
-        WebClient webClient = mock(WebClient.class);
-        WebClient.RequestBodyUriSpec postSpec = mock(WebClient.RequestBodyUriSpec.class);
-        WebClient.RequestBodySpec uriSpec = mock(WebClient.RequestBodySpec.class);
-        WebClient.RequestHeadersSpec<?> headersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+    void shouldSendBearerTokenWhenTokenExists() {
+        when(tokenProvider.getToken()).thenReturn("token-123");
 
-        doReturn(postSpec).when(webClient).post();
-        doReturn(uriSpec).when(postSpec).uri("/sync/cars");
-        doReturn(headersSpec).when(uriSpec).bodyValue(any());
-        doReturn(responseSpec).when(headersSpec).retrieve();
-        doReturn(Mono.error(new RuntimeException("boom")))
-                .when(responseSpec).toBodilessEntity();
+        client.upsertCar(mock(CarSyncRequest.class));
 
-        CarStoreViewClient client = new CarStoreViewClient(webClient);
-
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-                client.upsertCar(new CarSyncRequest(
-                        1L, "A", "B", 2000, "C",
-                        new BigDecimal("1.00"),
-                        Instant.now()
-                ))
-        );
-
+        verify(tokenProvider).getToken();
+        verify(builder).baseUrl("http://carstore_view_app:8081");
+        verify(uriSpec).uri("/sync/cars");
+        verify(bodySpec).headers(any());
+        verify(bodySpec).bodyValue(any(CarSyncRequest.class));
         verify(responseSpec).toBodilessEntity();
     }
 
+    @Test
+    void shouldCallWithoutBearerWhenTokenIsNull() {
+        when(tokenProvider.getToken()).thenReturn(null);
 
+        client.upsertCar(mock(CarSyncRequest.class));
+
+        verify(tokenProvider).getToken();
+        verify(bodySpec).headers(any());
+        verify(responseSpec).toBodilessEntity();
+    }
 }

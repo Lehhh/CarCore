@@ -104,7 +104,7 @@ class UserServiceImplTest {
         setField(existing, "id", id);
 
         when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.findByEmail("new@local")).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("new@local")).thenReturn(Optional.empty());
         when(repo.findByCpf("10987654321")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("newpass123")).thenReturn("NEW_HASH");
 
@@ -119,7 +119,7 @@ class UserServiceImplTest {
         assertEquals(id, resp.id());
 
         verify(repo).findById(id);
-        verify(repo).findByEmail("new@local");
+        verify(repo).findByEmailIgnoreCase("new@local");
         verify(repo).findByCpf("10987654321");
         verify(passwordEncoder).encode("newpass123");
         verifyNoMoreInteractions(repo, passwordEncoder);
@@ -132,7 +132,7 @@ class UserServiceImplTest {
         setField(existing, "id", id);
 
         when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.findByEmail("new@local")).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("new@local")).thenReturn(Optional.empty());
         when(repo.findByCpf("10987654321")).thenReturn(Optional.empty());
 
         UserUpdateRequest req = new UserUpdateRequest("New", "new@local", "10987654321", "   ");
@@ -142,7 +142,7 @@ class UserServiceImplTest {
         assertEquals(id, resp.id());
 
         verify(repo).findById(id);
-        verify(repo).findByEmail("new@local");
+        verify(repo).findByEmailIgnoreCase("new@local");
         verify(repo).findByCpf("10987654321");
         verifyNoMoreInteractions(repo, passwordEncoder);
     }
@@ -168,14 +168,14 @@ class UserServiceImplTest {
         setField(other, "id", 999L);
 
         when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.findByEmail("new@local")).thenReturn(Optional.of(other));
+        when(repo.findByEmailIgnoreCase("new@local")).thenReturn(Optional.of(other));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.update(id, new UserUpdateRequest("X", "new@local", "12345678901", null)));
         assertEquals("Email já cadastrado.", ex.getMessage());
 
         verify(repo).findById(id);
-        verify(repo).findByEmail("new@local");
+        verify(repo).findByEmailIgnoreCase("new@local");
         verifyNoMoreInteractions(repo, passwordEncoder);
     }
 
@@ -188,7 +188,7 @@ class UserServiceImplTest {
         setField(other, "id", 999L);
 
         when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.findByEmail("x@local")).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("x@local")).thenReturn(Optional.empty());
         when(repo.findByCpf("10987654321")).thenReturn(Optional.of(other));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -196,7 +196,7 @@ class UserServiceImplTest {
         assertEquals("CPF já cadastrado.", ex.getMessage());
 
         verify(repo).findById(id);
-        verify(repo).findByEmail("x@local");
+        verify(repo).findByEmailIgnoreCase("x@local");
         verify(repo).findByCpf("10987654321");
         verifyNoMoreInteractions(repo, passwordEncoder);
     }
@@ -270,23 +270,23 @@ class UserServiceImplTest {
     @Test
     void getByEmailOrThrowShouldNormalizeEmail() {
         AppUser user = new AppUser("A", "a@local", "12345678901", "H", RoleUser.ROLE_USER);
-        when(repo.findByEmail("a@local")).thenReturn(Optional.of(user));
+        when(repo.findByEmailIgnoreCase("a@local")).thenReturn(Optional.of(user));
 
         AppUser found = service.getByEmailOrThrow("  A@LOCAL ");
 
         assertSame(user, found);
-        verify(repo).findByEmail("a@local");
+        verify(repo).findByEmailIgnoreCase("a@local");
         verifyNoMoreInteractions(repo, passwordEncoder);
     }
 
     @Test
     void getByEmailOrThrowShouldFailWhenMissing() {
-        when(repo.findByEmail("a@local")).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("a@local")).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.getByEmailOrThrow("a@local"));
         assertEquals("Usuário não encontrado.", ex.getMessage());
 
-        verify(repo).findByEmail("a@local");
+        verify(repo).findByEmailIgnoreCase("a@local");
         verifyNoMoreInteractions(repo, passwordEncoder);
     }
 

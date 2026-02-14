@@ -1,5 +1,6 @@
 package br.com.fiap.soat7.infra.config.security;
 
+import br.com.fiap.soat7.data.RoleUser;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +17,7 @@ class JwtIssuerTest {
         PrivateKey pk = RsaKeyLoader.loadPrivateKeyPkcs8(Path.of("keys/private_key.pem"));
         JwtIssuer issuer = new JwtIssuer(pk, "carstore");
 
-        String token = issuer.issue("subj", "user@local", List.of("USER"), 3600L);
+        String token = issuer.issue("subj", "user@local", RoleUser.ROLE_ADMIN, 3600L);
 
         assertNotNull(token);
 
@@ -26,7 +27,7 @@ class JwtIssuerTest {
         assertEquals("carstore", claims.getIssuer());
         assertEquals("subj", claims.getSubject());
         assertEquals("user@local", claims.getStringClaim("email"));
-        assertEquals(List.of("USER"), claims.getStringListClaim("roles"));
+        assertEquals("ROLE_ADMIN", claims.getStringClaim("role"));
         assertNotNull(claims.getIssueTime());
         assertNotNull(claims.getExpirationTime());
         assertTrue(claims.getExpirationTime().after(claims.getIssueTime()));

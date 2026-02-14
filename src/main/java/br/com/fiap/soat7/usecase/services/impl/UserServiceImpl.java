@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         String cpf = req.cpf().trim();
 
         // Evita colisão quando editar para email/cpf de outro usuário
-        repo.findByEmail(email).ifPresent(existing -> {
+        repo.findByEmailIgnoreCase(email).ifPresent(existing -> {
             if (!existing.getId().equals(id)) throw new IllegalArgumentException("Email já cadastrado.");
         });
         repo.findByCpf(cpf).ifPresent(existing -> {
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AppUser getByEmailOrThrow(String email) {
-        return repo.findByEmail(email.toLowerCase().trim())
+        return repo.findByEmailIgnoreCase(email.toLowerCase().trim())
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
     }
 }

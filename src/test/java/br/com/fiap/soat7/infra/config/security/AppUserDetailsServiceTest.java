@@ -19,24 +19,24 @@ class AppUserDetailsServiceTest {
         AppUserDetailsService service = new AppUserDetailsService(repo);
 
         AppUser u = new AppUser("A", "a@local", "12345678901", "HASH", RoleUser.ROLE_ADMIN);
-        when(repo.findByEmail("a@local")).thenReturn(Optional.of(u));
+        when(repo.findByEmailIgnoreCase("a@local")).thenReturn(Optional.of(u));
 
         var details = service.loadUserByUsername("A@LOCAL");
 
         assertEquals("a@local", details.getUsername());
         assertEquals("HASH", details.getPassword());
         assertTrue(details.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
-        verify(repo).findByEmail("a@local");
+        verify(repo).findByEmailIgnoreCase("a@local");
     }
 
     @Test
     void loadUserByUsernameShouldThrowWhenMissing() {
         AppUserRepository repo = mock(AppUserRepository.class);
         AppUserDetailsService service = new AppUserDetailsService(repo);
-        when(repo.findByEmail("x@local")).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("x@local")).thenReturn(Optional.empty());
 
         assertThrows(UsernameNotFoundException.class, () -> service.loadUserByUsername("X@LOCAL"));
 
-        verify(repo).findByEmail("x@local");
+        verify(repo).findByEmailIgnoreCase("x@local");
     }
 }

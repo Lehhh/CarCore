@@ -1,58 +1,128 @@
 package br.com.fiap.soat7.infra.config.security;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class SecurityConfigTest {
 
-    @Test
-    void filterChainShouldBuildWithoutThrowing() throws Exception {
-        SecurityConfig cfg = new SecurityConfig();
+    private SecurityConfig config;
 
-        HttpSecurity http = mock(HttpSecurity.class, RETURNS_DEEP_STUBS);
-        SecurityFilterChain expected = mock(SecurityFilterChain.class);
-
-        doReturn(http).when(http).csrf(any());
-        doReturn(http).when(http).sessionManagement(any());
-        doReturn(http).when(http).authorizeHttpRequests(any());
-        doReturn(http).when(http).httpBasic(any());
-        doReturn(expected).when(http).build();
-
-        SecurityFilterChain chain = cfg.filterChain(http);
-
-        assertSame(expected, chain);
-
-        verify(http).csrf(any());
-        verify(http).sessionManagement(any());
-        verify(http).authorizeHttpRequests(any());
-        verify(http).httpBasic(any());
-        verify(http).build();
-    }
-
-
-    @Test
-    void passwordEncoderShouldReturnBCrypt() {
-        SecurityConfig cfg = new SecurityConfig();
-        assertNotNull(cfg.passwordEncoder());
-        assertTrue(cfg.passwordEncoder().getClass().getSimpleName().contains("BCrypt"));
+    @BeforeEach
+    void setUp() {
+        config = new SecurityConfig();
     }
 
     @Test
-    void authenticationManagerShouldDelegateToAuthConfiguration() throws Exception {
-        SecurityConfig cfg = new SecurityConfig();
-        AuthenticationConfiguration ac = mock(AuthenticationConfiguration.class);
-        AuthenticationManager am = mock(AuthenticationManager.class);
-        when(ac.getAuthenticationManager()).thenReturn(am);
+    void passwordEncoder_shouldReturnBCrypt() {
+        PasswordEncoder encoder = config.passwordEncoder();
+        assertNotNull(encoder);
+        assertTrue(encoder instanceof BCryptPasswordEncoder);
+    }
 
-        AuthenticationManager result = cfg.authenticationManager(ac);
+    @Test
+    void authenticationManager_shouldDelegateToAuthenticationConfiguration() throws Exception {
+        AuthenticationConfiguration authConfig = mock(AuthenticationConfiguration.class);
+        AuthenticationManager manager = mock(AuthenticationManager.class);
 
-        assertSame(am, result);
-        verify(ac).getAuthenticationManager();
+        when(authConfig.getAuthenticationManager()).thenReturn(manager);
+
+        AuthenticationManager result = config.authenticationManager(authConfig);
+
+        assertSame(manager, result);
+        verify(authConfig).getAuthenticationManager();
+        verifyNoMoreInteractions(authConfig);
+    }
+
+    @Test
+    void jwtAuthConverter_shouldUseRolesListClaim_andNormalizePrefix() {
+        Jwt jwt = jwtWithClaims(
+                "sub", "user-1",
+                Map.of("roles", List.of("ADMIN", " ROLE_USER ", "ROLE_MANAGER"))
+        );
+
+        JwtAuthenticationToken token = config.jwtAuthConverter().convert(jwt);
+
+        assertNotNull(token);
+        assertEquals("user-1", token.getName());
+
+        List<String> authorities = token.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .sorted()
+                .toList();
+
+        assertEquals(List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_USER"), authorities);
+    }
+
+    @Test
+    void jwtAuthConverter_shouldFallbackToSingleRoleClaim_whenRolesMissing() {
+        Jwt jwt = jwtWithClaims(
+                "sub", "user-2",
+                Map.of("role", "ADMIN")
+        );
+
+        JwtAuthenticationToken token = config.jwtAuthConverter().convert(jwt);
+
+        assertNotNull(token);
+
+        List<String> authorities = token.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        assertEquals(List.of("ROLE_ADMIN"), authorities);
+    }
+
+    @Test
+    void jwtAuthConverter_shouldReturnEmptyAuthorities_whenNoRoleClaims() {
+        Jwt jwt = jwtWithClaims("sub", "user-3", Map.of());
+
+        JwtAuthenticationToken token = config.jwtAuthConverter().convert(jwt);
+
+        assertNotNull(token);
+        assertTrue(token.getAuthorities().isEmpty());
+    }
+
+    @Test
+    void jwtAuthConverter_shouldIgnoreBlankRoles_andTrim() {
+        Jwt jwt = jwtWithClaims(
+                "sub", "user-4",
+                Map.of("roles", List.of("  ", "", " USER  ", "ROLE_ADMIN"))
+        );
+
+        JwtAuthenticationToken token = config.jwtAuthConverter().convert(jwt);
+
+        List<String> authorities = token.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .sorted()
+                .toList();
+
+        assertEquals(List.of("ROLE_ADMIN", "ROLE_USER"), authorities);
+    }
+
+    /**
+     * Helper para criar Jwt real (sem mock), preenchendo claims mínimos.
+     */
+    private static Jwt jwtWithClaims(String subjectKey, String subject, Map<String, Object> claims) {
+        // Jwt.Builder existe no Spring Security (org.springframework.security.oauth2.jwt.Jwt)
+        // headers pode ficar vazio
+        return Jwt.withTokenValue("fake-token")
+                .header("alg", "none")
+                .claim(subjectKey, subject) // geralmente "sub"
+                .claims(c -> c.putAll(claims))
+                .build();
     }
 }

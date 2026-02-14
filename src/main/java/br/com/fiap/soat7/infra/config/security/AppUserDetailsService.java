@@ -15,9 +15,10 @@ public class AppUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        var user = repo.findByEmail(email.toLowerCase())
+        var user = repo.findByEmailIgnoreCase(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
+        System.out.println("loadUserByUsername: " + user.getEmail() + ", role: " + user.getRole());
         return User.withUsername(user.getEmail())
                 .password(user.getPasswordHash())
                 .roles(user.getRole().name().replace("ROLE_", "")) // ROLE_USER -> USER

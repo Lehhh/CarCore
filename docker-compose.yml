@@ -15,13 +15,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - carstore_net
 
-  app:
-    image: ${APP_IMAGE}
+  car-backend:
     build:
       context: .
       dockerfile: ${DOCKERFILE_PATH:-Dockerfile}
-    container_name: ${APP_CONTAINER_NAME:-soat7-api}
+    container_name: ${APP_CONTAINER_NAME:-car-backend}
     depends_on:
       db:
         condition: service_healthy
@@ -36,14 +37,24 @@ services:
       DB_NAME: ${DB_NAME:-soat7}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-
+      CARSTORE_VIEW_BASE_URL: ${CARSTORE_VIEW_BASE_URL:-http://carstore-view-app:8081}
       # Admin bootstrap
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@soat7.com.br}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
 
       # Opcional: tuning JVM
       JAVA_OPTS: ${JAVA_OPTS:-}
+    # ✅ monta as chaves no caminho esperado pelo app
+    volumes:
+      - ${KEYS_DIR:-./keys}:/app/keys:ro
+    networks:
+      - carstore_net
 
 volumes:
   soat7_pgdata:
-    name: ${DB_VOLUME_NAME:-soat7_pgdata}
+#    name: ${DB_VOLUME_NAME:-soat7_pgdata}
+networks:
+  carstore_net:
+    external: true
+    name: carstore_net
+
