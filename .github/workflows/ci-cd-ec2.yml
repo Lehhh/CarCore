@@ -10,7 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   test_and_sonar:
     name: Tests + SonarCloud
     runs-on: ubuntu-latest
@@ -25,22 +24,22 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "24"
+          java-version: "21"
           cache: maven
 
       - name: Run tests
-        run: ./mvnw clean verify
+        run: ./mvnw -B clean verify
 
-      # 🔥 SonarCloud
+      # SonarCloud via Maven (melhor para pegar cobertura)
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ secrets.SONAR_ORG }}
-            -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          ./mvnw -B sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORG }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   build_and_push:
     name: Build & Push Docker (ECR)
@@ -68,19 +67,23 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build image
+      - name: Build & tag image
+        id: meta
         run: |
-          IMAGE_TAG=${GITHUB_SHA}
-          IMAGE_URI=${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}:${IMAGE_TAG}
+          IMAGE_TAG=${GITHUB_SHA::7}
+          REGISTRY='${{ steps.ecr.outputs.registry }}'
+          IMAGE_URI="$REGISTRY/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
           docker build -t "$IMAGE_URI" .
+          docker tag "$IMAGE_URI" "$REGISTRY/${ECR_REPOSITORY}:latest"
 
       - name: Push image
-        run: docker push "$IMAGE_URI"
-
-      - name: Export image uri
-        id: meta
-        run: echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+        run: |
+          docker push "$IMAGE_URI"
+          docker push "${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}:latest"
 
   deploy:
     name: Deploy EC2
@@ -95,12 +98,13 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            set -e
+            set -euo pipefail
 
-            APP_DIR=${{ secrets.EC2_APP_DIR }}
-            mkdir -p $APP_DIR
-            cd $APP_DIR
+            APP_DIR='${{ secrets.EC2_APP_DIR }}'
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
 
+            # .env para o docker compose
             cat > .env <<EOF
             APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
 
@@ -124,10 +128,15 @@ jobs:
             JWT_PRIVATE_KEY_PATH=${{ secrets.JWT_PRIVATE_KEY_PATH }}
             EOF
 
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-              | docker login --username AWS --password-stdin ${{ secrets.EC2_ECR_REGISTRY }}
+            # Login no ECR (descobre registry automaticamente)
+            AWS_REGION='${{ secrets.AWS_REGION }}'
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+            aws ecr get-login-password --region "$AWS_REGION" \
+              | docker login --username AWS --password-stdin "$REGISTRY"
 
             docker compose pull
-            docker compose up -d
+            docker compose up -d --remove-orphans
 
             docker image prune -f
