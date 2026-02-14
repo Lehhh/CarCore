@@ -20,6 +20,7 @@
 	<properties>
 		<!-- Boot 4 requer 17+; manter 17 garante compatibilidade -->
 		<java.version>17</java.version>
+		<sonar.organization>lehhh</sonar.organization>
 
 		<!-- SonarCloud: caminhos dos relatórios -->
 		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
