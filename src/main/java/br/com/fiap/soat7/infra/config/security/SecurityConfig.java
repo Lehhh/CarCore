@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**")) // ou /api/1/**
+//                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**")) // ou /api/1/**
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
