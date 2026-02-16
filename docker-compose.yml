@@ -36,6 +36,8 @@ services:
       DB_NAME: ${DB_NAME:-soat7}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
 
       # Integração (Core -> View)
       CARSTORE_VIEW_BASE_URL: ${CARSTORE_VIEW_BASE_URL:-http://carstore-view-app:8081}
