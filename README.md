@@ -272,13 +272,6 @@ Este projeto inclui **chaves JWT de desenvolvimento** no repositório **exclusiv
 > ⚠️ Em ambientes de produção, chaves privadas nunca devem ser versionadas em repositórios.
 
 
-## 👨‍💻 Autor
-
-Leandro Shiniti Tacara  
-RM355388  
-Pós Tech FIAP — Turma SOAT7
-
-
 ## ☁️ Requisitos para execução na AWS (EC2)
 
 Para executar e publicar via CI/CD (GitHub Actions) em uma instância EC2:
@@ -359,3 +352,9 @@ A seguir está uma descrição textual para você montar o **Diagrama de Caso de
 - O **cadastro/edição** e demais funcionalidades ficam no **Core Service (CarStoreBack)**.
 - A comunicação entre os serviços acontece via **HTTP**.
 
+
+## 👨‍💻 Autor
+
+Leandro Shiniti Tacara  
+RM355388  
+Pós Tech FIAP — Turma SOAT7
