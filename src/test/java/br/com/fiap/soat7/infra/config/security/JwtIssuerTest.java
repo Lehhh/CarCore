@@ -4,6 +4,7 @@ import br.com.fiap.soat7.data.RoleUser;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -30,8 +31,14 @@ class JwtIssuerTest {
     void issueShouldGenerateSignedJwtWithExpectedClaims() throws Exception {
         KeyPair kp = generateRsaKeyPair();
 
+        // gera PEM (multiline)
         String privatePem = toPemPrivate(kp.getPrivate());
-        PrivateKey pk = RsaKeyLoader.loadPrivateKeyPkcs8FromPem(privatePem);
+
+        // ✅ simula o que vem do .env / GitHub Secret: BASE64 do PEM inteiro (1 linha)
+        String privatePemB64 = Base64.getEncoder()
+                .encodeToString(privatePem.getBytes(StandardCharsets.UTF_8));
+
+        PrivateKey pk = RsaKeyLoader.loadPrivateKeyFromBase64Env(privatePemB64);
 
         JwtIssuer issuer = new JwtIssuer(pk, "carstore");
 
@@ -50,5 +57,6 @@ class JwtIssuerTest {
         assertNotNull(claims.getExpirationTime());
         assertTrue(claims.getExpirationTime().after(claims.getIssueTime()));
     }
+
 }
 

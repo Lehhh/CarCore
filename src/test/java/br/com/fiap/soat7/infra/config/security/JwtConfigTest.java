@@ -3,6 +3,7 @@ package br.com.fiap.soat7.infra.config.security;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Base64;
@@ -32,25 +33,34 @@ class JwtConfigTest {
     }
 
     @Test
-    void jwtIssuerBeanShouldBeCreatedFromPemContent() throws Exception {
+    void jwtIssuerBeanShouldBeCreatedFromPemBase64Content() throws Exception {
         JwtConfig config = new JwtConfig();
 
         KeyPair kp = generateRsaKeyPair();
-        String privatePem = toPemPrivate(kp);
 
-        JwtIssuer issuer = config.jwtIssuer(privatePem, "carstore");
+        // antes: String privatePem = toPemPrivate(kp);
+        String privatePem = toPemPrivate(kp);
+        String privatePemB64 = Base64.getEncoder()
+                .encodeToString(privatePem.getBytes(StandardCharsets.UTF_8));
+
+        // se seu método agora chama com PRIVATE_KEY_B64 (base64 do PEM inteiro)
+        JwtIssuer issuer = config.jwtIssuer(privatePemB64, "carstore");
 
         assertNotNull(issuer);
     }
 
     @Test
-    void jwtDecoderBeanShouldBeCreatedFromPemContent() throws Exception {
+    void jwtDecoderBeanShouldBeCreatedFromPemBase64Content() throws Exception {
         JwtConfig config = new JwtConfig();
 
         KeyPair kp = generateRsaKeyPair();
-        String publicPem = toPemPublic(kp);
 
-        JwtDecoder decoder = config.jwtDecoder(publicPem);
+        // antes: String publicPem = toPemPublic(kp);
+        String publicPem = toPemPublic(kp);
+        String publicPemB64 = Base64.getEncoder()
+                .encodeToString(publicPem.getBytes(StandardCharsets.UTF_8));
+
+        JwtDecoder decoder = config.jwtDecoder(publicPemB64);
 
         assertNotNull(decoder);
     }

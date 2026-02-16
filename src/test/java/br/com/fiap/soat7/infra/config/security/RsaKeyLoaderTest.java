@@ -2,6 +2,7 @@ package br.com.fiap.soat7.infra.config.security;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -25,11 +26,16 @@ class RsaKeyLoaderTest {
     }
 
     @Test
-    void loadPrivateKeyPkcs8ShouldLoadKeyFromPemContent() throws Exception {
+    void loadPrivateKeyPkcs8ShouldLoadKeyFromBase64EnvContent() throws Exception {
         KeyPair kp = generateRsaKeyPair();
+
+        // gera o PEM normal
         String privatePem = toPemPrivate(kp);
 
-        PrivateKey pk = RsaKeyLoader.loadPrivateKeyPkcs8FromPem(privatePem);
+        String privatePemB64 = Base64.getEncoder()
+                .encodeToString(privatePem.getBytes(StandardCharsets.UTF_8));
+
+        PrivateKey pk = RsaKeyLoader.loadPrivateKeyFromBase64Env(privatePemB64);
 
         assertNotNull(pk);
         assertEquals("RSA", pk.getAlgorithm());

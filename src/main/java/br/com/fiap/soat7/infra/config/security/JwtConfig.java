@@ -20,7 +20,7 @@ public class JwtConfig {
             @Value("${JWT_ISSUER}") String issuer
     ) throws Exception {
         // agora lê do CONTEÚDO PEM (secret), não de caminho
-        PrivateKey pk = RsaKeyLoader.loadPrivateKeyPkcs8FromPem(privateKeyPem);
+        PrivateKey pk = RsaKeyLoader.loadPrivateKeyFromBase64Env(privateKeyPem);
         return new JwtIssuer(pk, issuer);
     }
 
@@ -29,7 +29,7 @@ public class JwtConfig {
             @Value("${JWT_PUBLIC_KEY}") String publicKeyPem
     ) throws Exception {
         // corrigido: ${...} e lê do CONTEÚDO PEM (secret)
-        RSAPublicKey pub = RsaKeyLoader.loadPublicKeyX509FromPem(publicKeyPem);
+        RSAPublicKey pub = RsaKeyLoader.loadPublicKeyFromBase64Env(publicKeyPem);
         return NimbusJwtDecoder.withPublicKey(pub).build();
     }
 }

@@ -12,7 +12,17 @@ public final class RsaKeyLoader {
 
     private RsaKeyLoader() {}
 
-    public static PrivateKey loadPrivateKeyPkcs8FromPem(String pem) throws Exception {
+    public static PrivateKey loadPrivateKeyFromBase64Env(String base64Env) throws Exception {
+        String pem = new String(Base64.getDecoder().decode(base64Env));
+        return loadPrivateKeyPkcs8FromPem(pem);
+    }
+
+    public static RSAPublicKey loadPublicKeyFromBase64Env(String base64Env) throws Exception {
+        String pem = new String(Base64.getDecoder().decode(base64Env));
+        return loadPublicKeyX509FromPem(pem);
+    }
+
+    private static PrivateKey loadPrivateKeyPkcs8FromPem(String pem) throws Exception {
         String content = pem
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
@@ -23,7 +33,7 @@ public final class RsaKeyLoader {
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
 
-    public static RSAPublicKey loadPublicKeyX509FromPem(String pem) throws Exception {
+    private static RSAPublicKey loadPublicKeyX509FromPem(String pem) throws Exception {
         String content = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")

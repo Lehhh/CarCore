@@ -104,6 +104,9 @@ jobs:
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
 
+            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
+            JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
+
             cat > .env <<EOF
             APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
 
@@ -112,9 +115,6 @@ jobs:
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            
-            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
-            JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
 
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
