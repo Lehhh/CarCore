@@ -351,7 +351,7 @@ A seguir está uma descrição textual para você montar o **Diagrama de Caso de
 - O **fluxo de compra e listagens** fica isolado no **Sales Service (CarStoreView)** com **banco segregado**.
 - O **cadastro/edição** e demais funcionalidades ficam no **Core Service (CarStoreBack)**.
 - A comunicação entre os serviços acontece via **HTTP**.
-
+ 
 
 ## 👨‍💻 Autor
 
