@@ -53,7 +53,7 @@ jobs:
         id: build
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
-          REPO: car-backend   # <-- ajuste para o repo certo no ECR
+          REPO: ${{ secrets.ECR_REPOSITORY }}  # <-- ajuste para o repo certo no ECR
           TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
