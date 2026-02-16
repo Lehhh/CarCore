@@ -106,21 +106,21 @@ jobs:
             
             # IMAGE_URI vem do envs:
             APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
+            
             {
               echo "APP_IMAGE=$APP_IMAGE"
-              echo "DB_HOST=$DB_HOST"
-              echo "DB_PORT=$DB_PORT"
-              echo "DB_NAME=$DB_NAME"
-              echo "DB_USER=$DB_USER"
-              echo "DB_PASSWORD=$DB_PASSWORD"
-              echo "ADMIN_EMAIL=$ADMIN_EMAIL"
-              echo "ADMIN_PASSWORD=$ADMIN_PASSWORD"
-              echo "CARSTORE_VIEW_BASE_URL=$CARSTORE_VIEW_BASE_URL"
-              echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE"
-              echo "KEYS_DIR=$KEYS_DIR"
-              echo "JWT_ISSUER=$JWT_ISSUER"
-              echo "JWT_PRIVATE_KEY=$JWT_PRIVATE_KEY"
-              echo "JWT_PUBLIC_KEY=$JWT_PUBLIC_KEY"
+              echo "DB_HOST=${{ secrets.DB_HOST }}"
+              echo "DB_PORT=${{ secrets.DB_PORT }}"
+              echo "DB_NAME=${{ secrets.DB_NAME }}"
+              echo "DB_USER=${{ secrets.DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+              echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}"
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+              echo "CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}"
+              echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}"
+              echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}"
+              echo "JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}"
+              echo "JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}"
             } > .env
             
             awk -F= '/^(JWT_PRIVATE_KEY|JWT_PUBLIC_KEY)=/ {print $1, "len=" length($2)}' .env
