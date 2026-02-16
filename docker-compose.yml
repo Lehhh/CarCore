@@ -45,8 +45,6 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
 
       JAVA_OPTS: ${JAVA_OPTS:-}
-    volumes:
-      - ${KEYS_DIR:-./keys}:/app/keys:ro
     networks:
       - carstore_net
 

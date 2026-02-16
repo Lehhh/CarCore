@@ -1,36 +1,37 @@
 package br.com.fiap.soat7.infra.config.security;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-public class RsaKeyLoader {
+public final class RsaKeyLoader {
 
-    public static PrivateKey loadPrivateKeyPkcs8(Path pemPath) throws Exception {
-        String pem = Files.readString(pemPath, StandardCharsets.UTF_8)
+    private RsaKeyLoader() {}
+
+    public static PrivateKey loadPrivateKeyPkcs8FromPem(String pem) throws Exception {
+        String content = pem
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
 
-        byte[] der = Base64.getDecoder().decode(pem);
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
 
-    public static RSAPublicKey loadPublicKeyX509(Path pemPath) throws Exception {
-        String pem = Files.readString(pemPath, StandardCharsets.UTF_8)
+    public static RSAPublicKey loadPublicKeyX509FromPem(String pem) throws Exception {
+        String content = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
 
-        byte[] der = Base64.getDecoder().decode(pem);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(der);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+        PublicKey pub = KeyFactory.getInstance("RSA").generatePublic(spec);
+        return (RSAPublicKey) pub;
     }
 }
