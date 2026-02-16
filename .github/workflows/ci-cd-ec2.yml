@@ -125,7 +125,7 @@ jobs:
             cd "$APP_DIR"
             
             # IMAGE_URI vem do envs:
-            APP_IMAGE="$IMAGE_URI"
+            APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
             {
               echo "APP_IMAGE=$APP_IMAGE"
               echo "DB_HOST=$DB_HOST"
