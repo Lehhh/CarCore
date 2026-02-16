@@ -38,6 +38,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
 
       # Integração (Core -> View)
       CARSTORE_VIEW_BASE_URL: ${CARSTORE_VIEW_BASE_URL:-http://carstore-view-app:8081}
