@@ -103,21 +103,23 @@ jobs:
             set -euo pipefail
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
-
-            # Se o secret vier como PEM (multilinha com BEGIN), converte pra base64 1 linha.
-            # Se já vier como base64 (sem BEGIN), só remove quebras e usa direto (evita double-base64).
+          
+            RAW_PRIV='${{ secrets.JWT_PRIVATE_KEY }}'
+            RAW_PUB='${{ secrets.JWT_PUBLIC_KEY }}'
+          
+            # PEM -> base64 1-linha | base64 já 1-linha -> usa direto (sem double)
             if printf '%s' "$RAW_PRIV" | grep -q "BEGIN"; then
-            JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | base64 -w 0)"
+              JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | base64 | tr -d '\n\r')"
             else
-            JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | tr -d '\n\r')"
+              JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | tr -d '\n\r')"
             fi
           
             if printf '%s' "$RAW_PUB" | grep -q "BEGIN"; then
-            JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | base64 -w 0)"
+              JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | base64 | tr -d '\n\r')"
             else
-            JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | tr -d '\n\r')"
+              JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | tr -d '\n\r')"
             fi
-
+          
             {
               echo "APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}"
           
@@ -136,19 +138,23 @@ jobs:
               echo "KEYS_DIR=${{ secrets.KEYS_DIR }}"
               echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}"
           
-              # ✅ AGORA SIM: coloca no env-file em 1 linha
+              # ✅ 1 linha por variável, sem chance de quebrar
               printf "JWT_PRIVATE_KEY=%s\n" "$JWT_PRIVATE_KEY_B64"
               printf "JWT_PUBLIC_KEY=%s\n"  "$JWT_PUBLIC_KEY_B64"
             } > .env
-
+          
+            # sanity check: confirma que não tem linhas quebradas (sem vazar segredo)
+            grep -nE '^(JWT_PRIVATE_KEY|JWT_PUBLIC_KEY)=' .env | awk -F= '{print $1, "len=" length($2)}'
+          
             APP_IMAGE="${{ needs.build_and_push.outputs.image_uri }}"
             ECR_REGISTRY="$(echo "$APP_IMAGE" | cut -d/ -f1)"
-
+          
             docker network inspect carstore_net >/dev/null 2>&1 || docker network create carstore_net
-
+          
             aws ecr get-login-password --region "us-east-2" \
               | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-
+          
             docker compose --env-file .env pull
             docker compose --env-file .env up -d --no-build
             docker image prune -f
+
