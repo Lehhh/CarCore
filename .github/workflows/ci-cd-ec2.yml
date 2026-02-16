@@ -104,27 +104,31 @@ jobs:
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
 
-            JWT_PRIVATE_KEY="$(printf '%s' "${{ secrets.JWT_PRIVATE_KEY }}" | base64 -w 0)"
-            JWT_PUBLIC_KEY="$(printf '%s' "${{ secrets.JWT_PUBLIC_KEY }}"  | base64 -w 0)"
+            JWT_PRIVATE_KEY_B64="$(printf '%s' "${{ secrets.JWT_PRIVATE_KEY }}" | base64 -w 0)"
+            JWT_PUBLIC_KEY_B64="$(printf '%s' "${{ secrets.JWT_PUBLIC_KEY }}"  | base64 -w 0)"
 
 
-            cat > .env <<EOF
-            APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
-
-            DB_HOST=${{ secrets.DB_HOST }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-
-            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-
-            CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}
-
-            SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
-            KEYS_DIR=${{ secrets.KEYS_DIR }}
-            EOF
+            {
+              echo "APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}"
+          
+              echo "DB_HOST=${{ secrets.DB_HOST }}"
+              echo "DB_PORT=${{ secrets.DB_PORT }}"
+              echo "DB_NAME=${{ secrets.DB_NAME }}"
+              echo "DB_USER=${{ secrets.DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+          
+              echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}"
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+          
+              echo "CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}"
+          
+              echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}"
+              echo "KEYS_DIR=${{ secrets.KEYS_DIR }}"
+          
+              # ✅ AGORA SIM: coloca no env-file em 1 linha
+              printf "JWT_PRIVATE_KEY=%s\n" "$JWT_PRIVATE_KEY_B64"
+              printf "JWT_PUBLIC_KEY=%s\n"  "$JWT_PUBLIC_KEY_B64"
+            } > .env
 
             APP_IMAGE="${{ needs.build_and_push.outputs.image_uri }}"
             ECR_REGISTRY="$(echo "$APP_IMAGE" | cut -d/ -f1)"
