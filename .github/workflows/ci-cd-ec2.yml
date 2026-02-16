@@ -124,6 +124,7 @@ jobs:
           
               echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}"
               echo "KEYS_DIR=${{ secrets.KEYS_DIR }}"
+              echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}"
           
               # ✅ AGORA SIM: coloca no env-file em 1 linha
               printf "JWT_PRIVATE_KEY=%s\n" "$JWT_PRIVATE_KEY_B64"
