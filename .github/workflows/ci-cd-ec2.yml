@@ -104,9 +104,19 @@ jobs:
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
 
-            JWT_PRIVATE_KEY_B64="$(printf '%s' "${{ secrets.JWT_PRIVATE_KEY }}" | base64 -w 0)"
-            JWT_PUBLIC_KEY_B64="$(printf '%s' "${{ secrets.JWT_PUBLIC_KEY }}"  | base64 -w 0)"
-
+            # Se o secret vier como PEM (multilinha com BEGIN), converte pra base64 1 linha.
+            # Se já vier como base64 (sem BEGIN), só remove quebras e usa direto (evita double-base64).
+            if printf '%s' "$RAW_PRIV" | grep -q "BEGIN"; then
+            JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | base64 -w 0)"
+            else
+            JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | tr -d '\n\r')"
+            fi
+          
+            if printf '%s' "$RAW_PUB" | grep -q "BEGIN"; then
+            JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | base64 -w 0)"
+            else
+            JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | tr -d '\n\r')"
+            fi
 
             {
               echo "APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}"
