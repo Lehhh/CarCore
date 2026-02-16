@@ -4,6 +4,7 @@ import br.com.fiap.soat7.data.dto.car.CarCreateRequest;
 import br.com.fiap.soat7.data.dto.car.CarResponse;
 import br.com.fiap.soat7.data.dto.car.CarUpdateRequest;
 import br.com.fiap.soat7.usecase.services.CarService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/1/car")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class CarController {
 
     private final CarService carService;

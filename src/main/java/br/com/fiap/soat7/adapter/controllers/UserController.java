@@ -2,6 +2,7 @@ package br.com.fiap.soat7.adapter.controllers;
 
 import br.com.fiap.soat7.data.dto.user.*;
 import br.com.fiap.soat7.usecase.services.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/1/users")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserService service;
