@@ -9,6 +9,8 @@ Este repositório contém o **Core Service** (serviço principal) do projeto **C
 >
 > As funcionalidades de **compra/listagens e fluxo de venda** ficam no **Sales Service (CarStoreView)**, com **banco segregado** e comunicação via HTTP.
 
+![Core Service](images-readme/diagrama2.png)
+
 ---
 
 ## 📦 FASE 4 — Contexto do Projeto
@@ -20,6 +22,8 @@ Principais necessidades do negócio (visão geral do ecossistema):
 - Cadastro e edição de veículos
 - Efetivação de venda e confirmação/cancelamento de pagamento via webhook
 - Listagens (disponíveis e vendidos) ordenadas por preço
+
+
 
 ---
 
@@ -38,13 +42,44 @@ infra     → Configurações (segurança, banco, JWT)
 
 ```plantuml
 @startuml
+skinparam style strictuml
+skinparam packageStyle rectangle
+
 actor User
-User -> Controller
-Controller -> UseCase
-UseCase -> Repository
-Repository -> Database
+
+rectangle "Adapters Layer\n(Controllers, REST, Clients)" as adapters {
+component Controller
+}
+
+rectangle "Use Cases Layer\n(Regras de Negócio)" as usecase {
+component "CarService\nSalesService\nInteractors"
+}
+
+rectangle "Data Layer\n(DTOs, Repositories, Gateways)" as data {
+component Repository
+component DTO
+}
+
+rectangle "Infrastructure Layer\n(Spring, DB, Security, JWT, Config)" as infra {
+component Database
+component "JPA / WebClient"
+component "Security Config"
+}
+
+User --> Controller
+Controller --> usecase
+usecase --> Repository
+Repository --> Database
+
+' Dependências técnicas (implementações)
+Repository ..> "JPA / WebClient"
+Controller ..> "Security Config"
+
 @enduml
 ```
+[imagem do diagrama de camadas da Clean Architecture]
+![Clean Architecture Diagram](images-readme/diagram-1.png)
+
 
 ---
 
@@ -55,52 +90,29 @@ A solução é composta por dois serviços:
 - **Core Service (este repositório)** → usuários + cadastro/edição de veículos + endpoint fake de webhook (simulador)
 - **Sales Service (CarStoreView)** → compra/listagens + integração de venda com banco segregado
 
-```plantuml
-@startuml
-actor Cliente
-
-rectangle "Core Service (este repo)" as core
-rectangle "Sales Service (CarStoreView)" as sales
-
-database "DB Core" as dbcore
-database "DB Sales" as dbsales
-
-Cliente -> core : Cadastro/edição
-Usuários e veículos
-core -> dbcore
-
-core -> sales : HTTP REST
-(chamadas entre serviços)
-sales -> dbsales
-@enduml
-```
 
 ---
 
 ## ☁️ Deploy (Docker Compose na EC2)
-
-```plantuml
-@startuml
-actor Usuário
-cloud Internet
-
-node "AWS EC2" {
-  frame "Docker Compose" {
-    component "Core Service"
-    component "Sales Service"
-    database "DB Core"
-    database "DB Sales"
-  }
-}
-
-Usuário -> Internet
-Internet -> "Core Service"
-@enduml
-```
+- O deploy é feito utilizando **Docker Compose** em uma instância EC2, com pipeline de CI/CD configurado para:
+- Rodar testes
+- Build da imagem Docker
+- Push para o Amazon ECR
+- Deploy automático na EC2
+- O pipeline é disparado automaticamente em **push/merge na branch `main`**.
 
 ---
 
 ## ▶️ Executando Localmente
+
+- Para rodar localmente, você pode usar o **Docker Compose** (recomendado) ou rodar a aplicação localmente com o banco em Docker.
+- Certifique-se de ter as variáveis de ambiente configuradas corretamente (ver seção abaixo) para garantir que a aplicação consiga se conectar ao banco e funcione conforme esperado.
+- O endpoint fake de webhook pode ser testado localmente usando ferramentas como **Postman** ou **curl**, simulando as chamadas do provedor de pagamento.
+- Após subir a aplicação, acesse o **Swagger UI** para explorar os endpoints e testar as funcionalidades de cadastro/edição de veículos e simulação do webhook.
+- Lembre-se de que o fluxo de compra e listagens está isolado no Sales Service (CarStoreView), então para testar essas funcionalidades, você precisará subir ambos os serviços e garantir que eles estejam se comunicando corretamente via HTTP.
+- Certifique-se de que o banco de dados esteja rodando e acessível para a aplicação, seja via Docker Compose ou outro método, para evitar erros de conexão.
+- Ao rodar localmente, fique atento às portas configuradas para evitar conflitos com outros serviços que possam estar utilizando as mesmas portas.
+- Para testes ponta-a-ponta, certifique-se de que ambos os serviços (Core e Sales) estejam rodando e configurados para se comunicarem corretamente, especialmente no que diz respeito às URLs e portas utilizadas para as chamadas HTTP entre eles.
 
 ### ✅ Pré-requisitos
 
@@ -265,3 +277,85 @@ Este projeto inclui **chaves JWT de desenvolvimento** no repositório **exclusiv
 Leandro Shiniti Tacara  
 RM355388  
 Pós Tech FIAP — Turma SOAT7
+
+
+## ☁️ Requisitos para execução na AWS (EC2)
+
+Para executar e publicar via CI/CD (GitHub Actions) em uma instância EC2:
+
+- **Instância**: `t3.small`
+- **EC2 com IP público** (Elastic IP opcional, mas recomendado para estabilidade)
+- **Docker + Docker Compose** instalados na EC2
+- **Security Group** liberando:
+  - **SSH (22)** a partir do seu IP (administração)
+  - **Portas da aplicação** (ex.: `8080` no Core, `8081` no Sales)
+  - Permitir o deploy do **GitHub Actions** (via SSH) — recomenda-se restringir a origem aos **GitHub Actions IP ranges** ou usar **runner auto-hospedado** na própria VPC
+- **IAM Role** anexada à EC2 (mínimo necessário) para permitir operações usadas no deploy (ex.: pull de imagens no ECR, leitura de secrets/params, etc., conforme seu pipeline)
+
+
+
+## 🗃️ Banco de dados e migrações (Flyway)
+
+Este projeto utiliza **PostgreSQL** e possui **migrações Flyway** em `src/main/resources/db/migration`.
+Ao subir a aplicação, o Flyway executa as migrations automaticamente (por padrão).
+
+
+
+## 👤 Usuário admin padrão (para testes)
+
+Ao iniciar a aplicação, é criado automaticamente um **usuário admin padrão** para facilitar os testes ponta-a-ponta.
+
+> **Ajuste via variáveis de ambiente** (ver `application.yml` / `application.yaml`).
+
+
+
+## ✅ Evidências do Sonar / Cobertura
+
+> **Anexar aqui** (print/link) as evidências do SonarCloud, incluindo:
+- Quality Gate
+- Cobertura total (>= 80%)
+- Execução dos testes no pipeline
+
+
+
+## 🧩 Diagrama de Caso de Uso (descrição)
+
+A seguir está uma descrição textual para você montar o **Diagrama de Caso de Uso** (UML):
+
+### Atores
+- **Administrador**: usuário interno que cadastra e edita veículos e gerencia usuários.
+- **Cliente/Comprador**: usuário que realiza a compra (fluxo de venda).
+- **Gateway de Pagamento**: sistema externo que chama o webhook informando o status do pagamento.
+
+### Casos de uso (alto nível)
+1. **Cadastrar veículo para venda**
+   - Ator: Administrador
+   - Resultado: veículo cadastrado como disponível para venda.
+
+2. **Editar dados do veículo**
+   - Ator: Administrador
+   - Resultado: dados do veículo atualizados.
+
+3. **Efetuar venda (compra) de veículo**
+   - Ator: Cliente/Comprador
+   - Pré-condição: veículo está disponível
+   - Resultado: venda criada/registrada com CPF do comprador e data da venda.
+
+4. **Processar confirmação/cancelamento de pagamento (Webhook)**
+   - Ator: Gateway de Pagamento
+   - Entrada: código do pagamento + status (PAID/CANCELED)
+   - Resultado: venda atualiza o status (confirmada ou cancelada).
+
+5. **Listar veículos à venda (ordenado por preço)**
+   - Ator: Cliente/Comprador
+   - Resultado: lista ordenada do mais barato para o mais caro.
+
+6. **Listar veículos vendidos (ordenado por preço)**
+   - Ator: Administrador (ou usuário interno)
+   - Resultado: lista ordenada do mais barato para o mais caro.
+
+### Observação de arquitetura
+- O **fluxo de compra e listagens** fica isolado no **Sales Service (CarStoreView)** com **banco segregado**.
+- O **cadastro/edição** e demais funcionalidades ficam no **Core Service (CarStoreBack)**.
+- A comunicação entre os serviços acontece via **HTTP**.
+
