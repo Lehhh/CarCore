@@ -125,3 +125,4 @@ jobs:
             docker compose --env-file .env pull
             docker compose --env-file .env up -d --no-build
             docker image prune -f
+            
