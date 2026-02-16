@@ -120,7 +120,7 @@ jobs:
 
 
             aws ecr get-login-password --region "us-east-2" \
-              | docker login --username AWS --password-stdin "${{ ECR_REGISTRY }}"
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
             docker compose --env-file .env pull
             docker compose --env-file .env up -d --no-build
