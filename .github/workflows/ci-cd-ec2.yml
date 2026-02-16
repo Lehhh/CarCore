@@ -103,49 +103,58 @@ jobs:
             set -euo pipefail
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
-
+          
             RAW_PRIV='${{ secrets.JWT_PRIVATE_KEY }}'
             RAW_PUB='${{ secrets.JWT_PUBLIC_KEY }}'
-
+          
+            # PEM -> base64 1-linha | base64 já 1-linha -> usa direto (sem double)
             if printf '%s' "$RAW_PRIV" | grep -q "BEGIN"; then
-              JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | openssl base64 -A)"
+              JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | base64 | tr -d '\n\r')"
             else
               JWT_PRIVATE_KEY_B64="$(printf '%s' "$RAW_PRIV" | tr -d '\n\r')"
             fi
-
+          
             if printf '%s' "$RAW_PUB" | grep -q "BEGIN"; then
-              JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | openssl base64 -A)"
+              JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | base64 | tr -d '\n\r')"
             else
               JWT_PUBLIC_KEY_B64="$(printf '%s' "$RAW_PUB" | tr -d '\n\r')"
             fi
-
+          
             {
               echo "APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}"
+          
               echo "DB_HOST=${{ secrets.DB_HOST }}"
               echo "DB_PORT=${{ secrets.DB_PORT }}"
               echo "DB_NAME=${{ secrets.DB_NAME }}"
               echo "DB_USER=${{ secrets.DB_USER }}"
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+          
               echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}"
               echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+          
               echo "CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}"
+          
               echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}"
               echo "KEYS_DIR=${{ secrets.KEYS_DIR }}"
               echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}"
+          
+              # ✅ 1 linha por variável, sem chance de quebrar
               printf "JWT_PRIVATE_KEY=%s\n" "$JWT_PRIVATE_KEY_B64"
-              printf "JWT_PUBLIC_KEY=%s\n" "$JWT_PUBLIC_KEY_B64"
+              printf "JWT_PUBLIC_KEY=%s\n"  "$JWT_PUBLIC_KEY_B64"
             } > .env
-
-            # debug sem vazar segredo (mostra só tamanho)
-            awk -F= '/^(JWT_PRIVATE_KEY|JWT_PUBLIC_KEY)=/ {print $1, "len=" length($2)}' .env
-
+          
+            # sanity check: confirma que não tem linhas quebradas (sem vazar segredo)
+            grep -nE '^(JWT_PRIVATE_KEY|JWT_PUBLIC_KEY)=' .env | awk -F= '{print $1, "len=" length($2)}'
+          
             APP_IMAGE="${{ needs.build_and_push.outputs.image_uri }}"
             ECR_REGISTRY="$(echo "$APP_IMAGE" | cut -d/ -f1)"
-
+          
             docker network inspect carstore_net >/dev/null 2>&1 || docker network create carstore_net
-            aws ecr get-login-password --region "us-east-2" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+          
+            aws ecr get-login-password --region "us-east-2" \
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+          
             docker compose --env-file .env pull
             docker compose --env-file .env up -d --no-build
             docker image prune -f
-          
 
