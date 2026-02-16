@@ -76,6 +76,22 @@ jobs:
           docker push "$IMAGE_URI"
 
 
+  deploy:
+    name: Deploy EC2
+    runs-on: ubuntu-latest
+    needs: [build_and_push]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: ${{ secrets.EC2_APP_DIR }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -88,32 +104,27 @@ jobs:
             APP_DIR="${{ secrets.EC2_APP_DIR }}"
             cd "$APP_DIR"
 
-            # 1) pega PEM multilinha dos secrets (entre aspas!) e converte para Base64 1-linha
             JWT_PRIVATE_KEY_B64="$(printf '%s' "${{ secrets.JWT_PRIVATE_KEY }}" | base64 -w 0)"
             JWT_PUBLIC_KEY_B64="$(printf '%s' "${{ secrets.JWT_PUBLIC_KEY }}"  | base64 -w 0)"
 
-            # 2) escreve .env garantindo 1 linha por variável
-            {
-              echo "APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}"
 
-              echo "DB_HOST=${{ secrets.DB_HOST }}"
-              echo "DB_PORT=${{ secrets.DB_PORT }}"
-              echo "DB_NAME=${{ secrets.DB_NAME }}"
-              echo "DB_USER=${{ secrets.DB_USER }}"
-              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+            cat > .env <<EOF
+            APP_IMAGE=${{ needs.build_and_push.outputs.image_uri }}
 
-              echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}"
-              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
-              echo "CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}"
+            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
 
-              echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}"
-              echo "KEYS_DIR=${{ secrets.KEYS_DIR }}"
+            CARSTORE_VIEW_BASE_URL=${{ secrets.CARSTORE_VIEW_BASE_URL }}
 
-              # ✅ agora vai em base64 (1 linha), não quebra o env-file
-              printf "JWT_PRIVATE_KEY=%s\n" "$JWT_PRIVATE_KEY_B64"
-              printf "JWT_PUBLIC_KEY=%s\n"  "$JWT_PUBLIC_KEY_B64"
-            } > .env
+            SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
+            KEYS_DIR=${{ secrets.KEYS_DIR }}
+            EOF
 
             APP_IMAGE="${{ needs.build_and_push.outputs.image_uri }}"
             ECR_REGISTRY="$(echo "$APP_IMAGE" | cut -d/ -f1)"
